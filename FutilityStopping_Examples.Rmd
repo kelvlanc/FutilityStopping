@@ -1,0 +1,75 @@
+---
+title: 'Examples: Interim analyses incorporating short- and long-term binary endpoints'
+author: "Kelly Van Lancker"
+date: "16 September 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+In this file, the different steps for reproducing the results for the proposal in table 2 of the main body of the article can be found. 
+The output is produced using the R-Package `FutilityStopping`. The packages includes a number of functions that are useful for futility evaluations and simulations of (simulated) clinical trials with interim analyses incorporating short- and long-term binary endpoints. 
+
+First, load the package `FutilityStopping` (with its dependencies) and type in the following code. 
+
+```{r Set Up}
+library(FutilityStopping) # need to install this locally from .tar.gz file
+sessionInfo() 
+
+```
+# Determining cut-off
+To determine the cut-off, one should consider different superiority scenarios with each a maximum power loss. Below we show how to determine the cut-off based on FUT.2 under the assumed log odds ratio only. However, more scenarios can be used.
+To get an understanding of the method, 1000 simulations should be enough. However, note that the results in de main paper are based on 100000 simulations, but that this takes some hours to run.
+
+```{r}
+set.seed(12345)
+cutoff_SUP2_strong <- determine.Cutoff(n.1=275, n.0=275, n.coh1.1=60, n.coh1.0=60, 
+                        n.interim.1=110, n.interim.0=110, 
+                        prior.1 = c(43/4, 9/4, 1/4, 13/4), prior.0 = c(26/4, 12/4, 5/4, 23/4),
+                        p.pe.1_cp = 0.73, p.pe.0_cp = 0.60, 
+                        alternative = c("greater"), alpha = 0.025,
+                        method = c("analytical"), assumption = c("design"), 
+                        n.simqk = 2500, n.trials = 1000, ni.margin = 0,
+                        p.er.1=c(0.73), p.er.0=c(0.60), p.pe.1=c(0.73), p.pe.0=c(0.60),
+                        log.OR.1=c(7.4), log.OR.0=c(4.1), max.PowerReduction = 0.01)
+cutoff_SUP2_strong$cutoff
+
+```
+# Futility Stopping 
+We obtain a cut-off of 0.51.
+
+Now, use a scenario from the main article to simulate data under the futility scenarios. For example, FUT.2 under a weak log odds ratio.
+To get an understanding of the method, 5000 simulations should be enough. Note that the results in de main paper are based on 100000 simulations, but that this takes some hours to run.
+
+```{r}
+set.seed(12345)
+
+FUT2.weak =sim.Ecp(n.1=275, n.0=275, n.coh1.1=27, n.coh1.0=27, n.interim.1=110, n.interim.0=110, 
+                        prior.1 = c(43/4, 9/4, 1/4, 13/4), prior.0 = c(26/4, 12/4, 5/4, 23/4),
+                        p.pe.1_cp = 0.73, p.pe.0_cp = 0.60, 
+                        p.er.1=0.60, p.er.0=0.60, p.pe.1=0.60, p.pe.0=0.60,
+                        log.OR.1=0.8, log.OR.0=0.5, alternative = c("greater"), alpha = 0.025,
+                        method = c("analytical"), assumption = c("design"), 
+                        cutoff = cutoff_SUP2_strong$cutoff, n.simqk = 2500, 
+                        n.trials = 1000, ni.margin = 0)
+FUT2.weak$fraction.cutoff
+
+```
+
+Or FUT.6 under a strong log odds ratio
+
+```{r}
+
+FUT6.strong =sim.Ecp(n.1=275, n.0=275, n.coh1.1=27, n.coh1.0=27, n.interim.1=110, n.interim.0=110, 
+                          prior.1 = c(43/4, 9/4, 1/4, 13/4), prior.0 = c(26/4, 12/4, 5/4, 23/4),
+                          p.pe.1_cp = 0.73, p.pe.0_cp = 0.60, 
+                          p.er.1=0.40, p.er.0=0.40, p.pe.1=0.60, p.pe.0=0.60,
+                          log.OR.1=7.4, log.OR.0=4.1, alternative = c("greater"), alpha = 0.025,
+                          method = c("analytical"), assumption = c("design"), 
+                          cutoff = cutoff_SUP2_strong$cutoff, n.simqk = 2500, 
+                          n.trials = 1000, ni.margin = 0)
+FUT6.strong$fraction.cutoff
+```
